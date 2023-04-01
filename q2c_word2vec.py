@@ -4,8 +4,8 @@ import random
 import numpy as np
 
 from helpers.utils import normalize_rows, sigmoid, get_negative_samples
-from q3a_softmax import softmax
-from q3b_gradcheck import gradcheck_naive
+from q2a_softmax import softmax
+from q2b_gradcheck import gradcheck_naive
 
 
 def naive_softmax_loss_and_gradient(
@@ -37,10 +37,14 @@ def naive_softmax_loss_and_gradient(
                     (dJ / dU)
     """
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
-
+    similarity = np.dot(outside_vectors.T, center_word_vec)
+    y_hat = softmax(similarity)
+    # create one-hot-vector for v_o
+    y = np.zeros_like(y_hat)
+    y[0, outside_word_idx] = 1
+    loss = -np.log(y_hat[0,outside_word_idx])
+    grad_center_vec =
+    grad_outside_vecs =
     return loss, grad_center_vec, grad_outside_vecs
 
 
