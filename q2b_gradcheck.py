@@ -35,12 +35,20 @@ def gradcheck_naive(f, x, gradient_text=""):
         # before calling f(x) each time. This will make it possible
         # to test cost functions with built in randomness later.
 
-        random.setstate(rndstate)
-        h_arr = np.zeros_like(x)
-        h_arr[ix] = h
-        #  fx, grad = f(x), thus we calculate f(x+-h_arr)[0]
-        numgrad = (f(x + h_arr)[0] - f(x - h_arr))[0] / (2*h)
+        # Calculate f(x+h) and f(x-h) to find the centered difference
+        # The centered difference is given by the formula:
+        # f'(x) = lim_{h->0} (f(x+h) - f(x-h)) / (2*h)
 
+        random.setstate(rndstate)
+        x[ix] += h
+        fxh = f(x)[0]
+        random.setstate(rndstate)
+        x[ix] -= 2*h
+        fxh_minus = f(x)[0]
+        numgrad = (fxh - fxh_minus) / (2*h)
+
+        # Reset x to original value
+        x[ix] += h
         # Compare gradients
         assert_allclose(numgrad, grad[ix], rtol=1e-5,
                         err_msg=f"Gradient check failed for {gradient_text}.\n"

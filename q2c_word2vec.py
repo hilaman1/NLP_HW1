@@ -37,14 +37,22 @@ def naive_softmax_loss_and_gradient(
                     (dJ / dU)
     """
 
-    similarity = np.dot(outside_vectors.T, center_word_vec)
-    y_hat = softmax(similarity)
-    # create one-hot-vector for v_o
-    y = np.zeros_like(y_hat)
-    y[0, outside_word_idx] = 1
-    loss = -np.log(y_hat[0,outside_word_idx])
-    grad_center_vec =
-    grad_outside_vecs =
+    y_hat = softmax(np.dot(outside_vectors, center_word_vec))
+    loss = -np.log(y_hat[outside_word_idx])
+
+    # create the one hot vector
+    y = np.zeros(y_hat.shape)
+    y[outside_word_idx] = 1
+
+    # Calculate gradient w.r.t center word vector:
+    grad_center_vec = np.dot(outside_vectors.T, y_hat - y)  # U.T * (y_hat - y)
+    # Calculate gradient w.r.t outside word vectors:
+    grad_outside_vecs = np.outer(y_hat - y, center_word_vec)  # (y_hat - y) * v_c.T
+
+    # just to make sure that the shapes are correct
+    assert grad_center_vec.shape == center_word_vec.shape
+    assert grad_outside_vecs.shape == outside_vectors.shape
+
     return loss, grad_center_vec, grad_outside_vecs
 
 
@@ -74,9 +82,26 @@ def neg_sampling_loss_and_gradient(
     neg_sample_word_indices = get_negative_samples(outside_word_idx, dataset, K)
     indices = [outside_word_idx] + neg_sample_word_indices
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+
+    u_o = outside_vectors[outside_word_idx] # u_o
+    u_k = outside_vectors[neg_sample_word_indices] # u_k
+    suo = sigmoid(np.inner(u_o, center_word_vec)) # sigmoid(u_o.T * v_c)
+    suk = sigmoid(np.inner(-u_k, center_word_vec)) # sigmoid(-u_k.T * v_c)
+
+    # Calculate loss:
+    loss = -np.log(suo) - np.sum(np.log(suk))
+
+    # Calculate gradient w.r.t center word vector:
+    grad_center_vec = -(1 - suo) * u_o + np.matmul(1-suk, u_k) # (1 - suo) * u_o + sum_k(1 - suk) * u_k
+
+    # Calculate gradient w.r.t outside word vectors:
+    grad_outside_vecs = np.zeros_like(outside_vectors)
+    grad_outside_vecs[outside_word_idx] = (suo - 1) * center_word_vec # (suo - 1) * v_c
+
+    # if an outside word is sampled more than once, we have to multiply the gradient with the number of times it was sampled
+    for i, nid in enumerate(neg_sample_word_indices):
+        grad_outside_vecs[nid] += (1 - suk[i]) * center_word_vec # (1 - suk) * v_c
+
 
     return loss, grad_center_vec, grad_outside_vecs
 
@@ -115,9 +140,15 @@ def skipgram(current_center_word, outside_words, word2ind,
     grad_center_vecs = np.zeros(center_word_vectors.shape)
     grad_outside_vectors = np.zeros(outside_vectors.shape)
 
-    ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
+    center_word_idx = word2ind[current_center_word]  # get the index of the center word
+    center_word_vec = center_word_vectors[center_word_idx]  # get the vector of the center word
+    for outside_word in outside_words:  # for each outside word
+        outside_word_idx = word2ind[outside_word]  # get the index of the outside word
+        loss_, grad_center_vec_, grad_outside_vecs_ = word2vec_loss_and_gradient(center_word_vec, outside_word_idx,
+                                                                                 outside_vectors, dataset)
+        loss += loss_
+        grad_center_vecs[center_word_idx] += grad_center_vec_
+        grad_outside_vectors += grad_outside_vecs_
 
     return loss, grad_center_vecs, grad_outside_vectors
 
