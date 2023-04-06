@@ -7,8 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from helpers.treebank import StanfordSentiment
-from q3c_word2vec import *
-from q3d_sgd import *
+from q2c_word2vec import *
+from q2d_sgd import *
 
 # Check Python Version
 assert sys.version_info[0] == 3
@@ -63,7 +63,7 @@ visualize_vecs = word_vectors[visualize_idx, :]
 temp = (visualize_vecs - np.mean(visualize_vecs, axis=0))
 covariance = 1.0 / len(visualize_idx) * temp.T.dot(temp)
 U, S, V = np.linalg.svd(covariance)
-coord = temp.dot(U[:, 0:2])
+coord = temp.dot(U[:, 0:2]) # AU = \lambda U
 
 for i in range(len(visualize_words)):
     plt.text(coord[i, 0], coord[i, 1], visualize_words[i],
